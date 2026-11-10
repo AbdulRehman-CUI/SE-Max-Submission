@@ -128,7 +128,7 @@ Never commit `.env`, `.env.local`, passwords, API keys, JWT secrets, or real per
 
 ### Run
 
-Initialize the local schema once from `backend`:
+For local development, initialize the SQLite schema once from `backend`:
 
 ```powershell
 .venv\Scripts\python -c "from app import models; from app.database import Base, engine; Base.metadata.create_all(engine)"
@@ -162,6 +162,8 @@ The main frontend routes are:
 - `/analytics` — spending analytics and anomalies
 - `/insights` — financial insights
 - `/settings` — account settings
+
+For production deployment to Vercel and Neon, follow [Vercel deployment](docs/VERCEL_DEPLOYMENT.md). Production uses Alembic migrations rather than `create_all`.
 
 ### Run tests
 
@@ -197,7 +199,7 @@ The backend suite uses mocked/unit coverage for most services and skips opt-in l
 - Gemini features require a server-side `GEMINI_API_KEY`; without it, AI expense parsing is unavailable and insights use the deterministic fallback where supported.
 - The backend currently uses bearer tokens stored by the frontend in tab-scoped `sessionStorage`; it does not provide refresh tokens or an HttpOnly cookie flow.
 - A production deployment using a separate frontend and backend origin must configure CORS or use a reverse proxy.
-- Database schema initialization currently uses SQLAlchemy `create_all`; production schema evolution should use the existing migration tooling.
+- Local setup uses SQLAlchemy `create_all` for the SQLite sandbox; production schema creation and evolution use Alembic migrations.
 - No migration, backup, monitoring, or hosted deployment configuration is included in this repository.
 
 ## Documentation
@@ -217,11 +219,12 @@ The backend suite uses mocked/unit coverage for most services and skips opt-in l
 - [Merge integration notes](docs/MERGE_INTEGRATION.md)
 - [AI usage log](docs/ai-usage-log.md)
 - [Submission checklist](SUBMISSION.md)
+- [Vercel and Neon deployment](docs/VERCEL_DEPLOYMENT.md)
 
 ## Team
 
 Team member names and role assignments have not been recorded in this repository.
 
 | Name | Role |
-|------|------|
-| Not specified | Not specified |
+| Abdul Rehman | Frontend, Deployement|
+| Husnain Abbas | Backend |

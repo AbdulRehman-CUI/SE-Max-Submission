@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # ── Application ───────────────────────────────────────────────────────────
     APP_NAME: str = "SpendSense"
     DEBUG: bool = False
+    ALLOWED_ORIGINS: str = (
+        "http://127.0.0.1:5173,http://localhost:5173,"
+        "https://se-max-submission.vercel.app"
+    )
 
     # ── Database ──────────────────────────────────────────────────────────────
     # SQLite keeps local development self-contained. Set DATABASE_URL to a
@@ -47,6 +51,10 @@ class Settings(BaseSettings):
         # Silently ignore extra env vars that don't map to a field
         extra="ignore",
     )
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
 
 # Single, module-level instance – import this everywhere.

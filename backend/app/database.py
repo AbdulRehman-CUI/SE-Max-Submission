@@ -35,8 +35,9 @@ if is_sqlite:
 else:
     engine_options.update({
         "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
+        "pool_size": 1,
+        "max_overflow": 0,
+        "pool_recycle": 300,
     })
 
 engine = create_engine(settings.DATABASE_URL, **engine_options)
