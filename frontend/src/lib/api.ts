@@ -13,7 +13,12 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
-const base = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+const configuredBase =
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api";
+const base =
+  configuredBase === "/api"
+    ? configuredBase
+    : configuredBase.replace(/\/+$/, "").replace(/\/api$/, "");
 
 function errorMessage(status: number, body: unknown): string {
   const detail =

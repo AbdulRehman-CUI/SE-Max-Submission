@@ -12,8 +12,9 @@ SpendSense is designed for individuals who want a simple way to track day-to-day
 
 ## Live deployment
 
-- **URL / install link:** Not configured in this repository.
-- **Platform:** Local web application; production deployment requires hosting the FastAPI backend, a PostgreSQL-compatible database, and the built frontend.
+- **URL / install link:** [SpendSense production frontend](https://se-max-submission.vercel.app)
+- **Backend API:** [SpendSense production backend](https://se-max-submission-backend.vercel.app)
+- **Platform:** Vercel frontend and FastAPI backend with Neon PostgreSQL.
 
 ## Judge quick start (under 5 minutes)
 
@@ -97,7 +98,7 @@ Copy-Item .env.example .env.local
 The default frontend API configuration is:
 
 ```env
-VITE_API_BASE_URL=/api
+VITE_API_URL=/api
 ```
 
 Vite proxies `/api/*` to FastAPI at `http://127.0.0.1:8000` and removes the `/api` prefix.
@@ -122,7 +123,7 @@ Frontend variables are documented in [`frontend/.env.example`](frontend/.env.exa
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `VITE_API_BASE_URL` | No | API base URL; defaults to `/api` |
+| `VITE_API_URL` | No | API base URL; defaults to `/api`; use the deployed backend URL in production |
 
 Never commit `.env`, `.env.local`, passwords, API keys, JWT secrets, or real personal financial data.
 

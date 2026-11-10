@@ -31,7 +31,7 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open [the local frontend](http://127.0.0.1:5173). The default `VITE_API_BASE_URL=/api` routes browser requests through Vite's development proxy to FastAPI at `http://127.0.0.1:8000`. Vite removes the proxy prefix, so requests arrive at FastAPI paths such as `/auth/me` and `/expenses`.
+Open [the local frontend](http://127.0.0.1:5173). The default `VITE_API_URL=/api` routes browser requests through Vite's development proxy to FastAPI at `http://127.0.0.1:8000`. Vite removes the proxy prefix, so requests arrive at FastAPI paths such as `/auth/me` and `/expenses`.
 
 ## API and account behavior
 
@@ -50,7 +50,7 @@ The bearer token is stored in tab-scoped `sessionStorage` so refreshing the tab 
 
 ## CORS and deployment
 
-For production, build the frontend and host `dist/` with an SPA rewrite to `index.html` for browser routes. The default same-origin setup requires a reverse proxy that forwards `/api/*` to FastAPI and strips `/api`. For the separate Vercel deployment, set `VITE_API_BASE_URL` to the backend URL before building. Vite preview uses the same local proxy for development verification. See [Vercel deployment](../docs/VERCEL_DEPLOYMENT.md).
+For production, build the frontend and host `dist/` with an SPA rewrite to `index.html` for browser routes. The default same-origin setup requires a reverse proxy that forwards `/api/*` to FastAPI and strips `/api`. For the separate Vercel deployment, set `VITE_API_URL` to the backend URL before building. Vite preview uses the same local proxy for development verification. See [Vercel deployment](../docs/VERCEL_DEPLOYMENT.md).
 
 When the browser calls a separate FastAPI origin directly, configure that server or its gateway to allow the exact frontend origin, the required methods (`GET`, `POST`, `PATCH`, `DELETE`, and preflight `OPTIONS`), and the `Authorization` and `Content-Type` headers. The backend allows the configured `ALLOWED_ORIGINS` and the required API methods and headers. Keep database credentials, JWT secrets, and Gemini credentials in the backend environment.
 
