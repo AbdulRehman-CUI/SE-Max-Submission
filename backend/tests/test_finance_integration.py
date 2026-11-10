@@ -37,6 +37,7 @@ _ROUTES = {
     ("/expenses", "get"): (200, None, "list:ExpenseResponse"),
     ("/expenses/{expense_id}", "get"): (200, None, "ExpenseResponse"),
     ("/expenses/{expense_id}", "patch"): (200, "ExpenseUpdate", "ExpenseResponse"),
+    ("/expenses/{expense_id}", "put"): (200, "ExpenseUpdate", "ExpenseResponse"),
     ("/expenses/{expense_id}", "delete"): (204, None, None),
     ("/expenses/parse", "post"): (200, "ExpenseParseRequest", "ExpenseParseResponse"),
     ("/expenses/parse-sms", "post"): (200, "SMSParseRequest", "SMSParseResponse"),
@@ -44,6 +45,7 @@ _ROUTES = {
     ("/budgets", "get"): (200, None, "list:BudgetResponse"),
     ("/budgets/{budget_id}", "get"): (200, None, "BudgetResponse"),
     ("/budgets/{budget_id}", "patch"): (200, "BudgetUpdate", "BudgetResponse"),
+    ("/budgets/{budget_id}", "put"): (200, "BudgetUpdate", "BudgetResponse"),
     ("/budgets/{budget_id}", "delete"): (204, None, None),
     ("/budgets/{budget_id}/summary", "get"): (200, None, "BudgetSummary"),
 }
@@ -221,7 +223,7 @@ class SharedORMCompatibilityTests(unittest.TestCase):
         table = inspect(self.models.Budget).local_table
         self.assertTrue(any(
             set(item.columns.keys()) == {"user_id", "category", "month", "year"}
-            and item.name == "uq_budgets_user_category_month_year"
+            and item.name == "uq_budget_user_category_month_year"
             for item in [
                 *(c for c in table.constraints if isinstance(c, UniqueConstraint)),
                 *(index for index in table.indexes if index.unique),

@@ -72,18 +72,18 @@ def check_anomaly(candidate: AnomalyCheckRequest, analytics: Analytics) -> Anoma
 
 
 @dataclass(frozen=True)
-class _InsightInputs:
+class InsightInputs:
     month: MonthlySpendingTrend
     budgets: list[BudgetResponse]
     anomaly: AnomalyResult | None
 
 
-def _insight_inputs(
+def collect_insight_inputs(
     year: Year,
     month: Month,
     analytics: Analytics,
     budgets: Annotated[BudgetService, Depends(get_budget_service)],
-) -> _InsightInputs:
+) -> InsightInputs:
     reference = datetime.now(timezone.utc)
     try:
         report = analytics.trends(
@@ -96,12 +96,12 @@ def _insight_inputs(
     budget_rows = budgets.get_budgets_for_month(year, month) if report.currency == BUDGET_CURRENCY else []
     if any(row.user_id != analytics.user_id for row in budget_rows):
         raise RuntimeError("Budget provider returned another user's data")
-    return _InsightInputs(report, budget_rows, anomaly)
+    return InsightInputs(report, budget_rows, anomaly)
 
 
 @router.get("/insights")
 async def insights(
-    inputs: Annotated[_InsightInputs, Depends(_insight_inputs)],
+    inputs: Annotated[InsightInputs, Depends(collect_insight_inputs)],
     generator: Annotated[FinancialInsightsService, Depends(get_financial_insights)],
 ) -> FinancialInsightsResponse:
     return await generator.generate(inputs.month, budgets=inputs.budgets, anomaly=inputs.anomaly)

@@ -1,10 +1,10 @@
 # Frontend and backend integration
 
-The local checkout contains the finance backend and test fixtures. Frontend source, its framework, and the production authentication contract are pending from the team. Use this guide to connect the frontend after Developer 1 mounts the approved routers. Paths below are relative to the shared API base. `/api` was used in tests as an example prefix. The five analytics paths and the additive SMS metadata remain provisional.
+The merged backend mounts finance and legacy analytics at the root, and the newer analytics contracts under `/v2/analytics`. The frontend source and framework remain pending. Use the deployed backend origin as the API base, including any prefix configured by the deployment. See the [merge integration notes](MERGE_INTEGRATION.md) for compatibility details.
 
 ## Authentication and configuration
 
-Use the foundation's actual registration and login routes once available. Read its token response and send `Authorization: Bearer <access_token>` with every finance request. Handle a `401` through the frontend's existing authentication flow. Set the frontend's public API base URL to the deployed backend origin and approved prefix. A framework-specific variable name, browser origin allowlist, and token lifecycle depend on the missing frontend and backend configuration. Set `GEMINI_API_KEY` and optional `GEMINI_MODEL` on the server only. Use Developer 1's actual JWT and PostgreSQL environment variables.
+Register with `POST /auth/register` using `username`, `email`, and `password`. Sign in with `POST /auth/login` using `username` or `email` and `password`. Read `access_token` from the response and send `Authorization: Bearer <access_token>` with every finance request. Handle `401` through the frontend's authentication flow. Set `GEMINI_API_KEY` and optional `GEMINI_MODEL` on the server only. See `backend/.env.example` for the JWT and PostgreSQL variables.
 
 ## API operations
 
@@ -13,21 +13,21 @@ Use the foundation's actual registration and login routes once available. Read i
 | `POST /expenses` | `ExpenseCreate` | `201 ExpenseResponse` |
 | `GET /expenses` | Optional `skip`, `limit` | `200 ExpenseResponse[]` |
 | `GET /expenses/{expense_id}` | Expense UUID | `200 ExpenseResponse` |
-| `PATCH /expenses/{expense_id}` | Supplied fields from `ExpenseCreate` | `200 ExpenseResponse` |
+| `PATCH` or `PUT /expenses/{expense_id}` | Supplied fields from `ExpenseCreate` | `200 ExpenseResponse` |
 | `DELETE /expenses/{expense_id}` | Expense UUID | `204` with an empty body |
 | `POST /budgets` | `BudgetCreate` | `201 BudgetResponse` |
 | `GET /budgets` | Optional `skip`, `limit` | `200 BudgetResponse[]` |
 | `GET /budgets/{budget_id}` | Budget UUID | `200 BudgetResponse` |
-| `PATCH /budgets/{budget_id}` | Supplied fields from `BudgetCreate` | `200 BudgetResponse` |
+| `PATCH` or `PUT /budgets/{budget_id}` | Supplied fields from `BudgetCreate` | `200 BudgetResponse` |
 | `DELETE /budgets/{budget_id}` | Budget UUID | `204` with an empty body |
 | `GET /budgets/{budget_id}/summary` | Budget UUID | `200 BudgetSummary` |
 | `POST /expenses/parse` | `{"text":"..."}` | `200 ExpenseParseResponse` |
 | `POST /expenses/parse-sms` | `{"text":"..."}` | `200 SMSParseResponse` |
-| `GET /analytics/monthly` | Required `year`, `month` | `200 MonthlySpendingSummary` |
-| `GET /analytics/categories` | Required `year`, `month` | `200 CategorySpending[]` |
-| `GET /analytics/trends` | Optional `months` (default `3`), `end_month` (`YYYY-MM-DD`) | `200 MonthlySpendingTrend[]` |
-| `POST /analytics/anomalies/check` | `AnomalyCheckRequest` | `200 AnomalyResult` |
-| `GET /analytics/insights` | Required `year`, `month` | `200 FinancialInsightsResponse` |
+| `GET /v2/analytics/monthly` | Required `year`, `month` | `200 MonthlySpendingSummary` |
+| `GET /v2/analytics/categories` | Required `year`, `month` | `200 CategorySpending[]` |
+| `GET /v2/analytics/trends` | Optional `months` (default `3`), `end_month` (`YYYY-MM-DD`) | `200 MonthlySpendingTrend[]` |
+| `POST /v2/analytics/anomalies/check` | `AnomalyCheckRequest` | `200 AnomalyResult` |
+| `GET /v2/analytics/insights` | Required `year`, `month` | `200 FinancialInsightsResponse` |
 
 `ExpenseCreate` requires `amount`, `category`, and `transaction_date`. `currency` defaults to `PKR`, and `description` and `payment_method` are optional. `ExpenseResponse` adds `id`, `user_id`, and `created_at`. `BudgetCreate` requires `budget_limit`, `category`, `year`, and `month`. `BudgetResponse` adds `id`, `user_id`, `created_at`, `total_spent`, and `remaining_budget`. `BudgetSummary` uses `budget_id`, `category`, `year`, `month`, `budget_limit`, `total_spent`, and `remaining_budget`. Preserve negative remainders. Pagination defaults to `skip=0` and `limit=20`, with `limit` capped at 100. Keep monetary values and percentages as decimal strings. PATCH omission preserves the field, and explicit null clears an expense description or payment method. The budget provider can lock period changes.
 
@@ -61,9 +61,9 @@ curl -X POST "$API_BASE/expenses" \
 `AnomalyCheckRequest` accepts the candidate `amount`, `category`, `transaction_date`, and `currency` (default `PKR`). The provisional HTTP amount accepts up to 512 digits and 128 fractional places to bound arithmetic. The response includes `status`, `is_unusual`, `has_enough_history`, `sample_count`, `minimum_history`, `baseline_method`, `baseline_amount`, `threshold_amount`, `threshold_multiplier`, `minimum_amount`, `explanation`, and the candidate context fields. Show the server's explanation when history is insufficient or the baseline is unavailable. The check makes no expense entry.
 
 ```sh
-curl "$API_BASE/analytics/trends?months=3&end_month=2026-11-01" \
+curl "$API_BASE/v2/analytics/trends?months=3&end_month=2026-11-01" \
   -H "Authorization: Bearer $ACCESS_TOKEN"
-curl "$API_BASE/analytics/insights?year=2026&month=11" \
+curl "$API_BASE/v2/analytics/insights?year=2026&month=11" \
   -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 

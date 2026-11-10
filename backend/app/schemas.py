@@ -13,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
+    TypeAdapter,
     computed_field,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -47,6 +48,9 @@ _PatchValue = Annotated[
     AfterValidator(_require_value),
 ]
 _Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+_Category = Annotated[_Text, Field(max_length=100)]
+_Description = Annotated[_Text, Field(max_length=255)]
+_PaymentMethod = Annotated[_Text, Field(max_length=50)]
 _Currency = Annotated[
     str, StringConstraints(strip_whitespace=True, pattern=r"^[A-Za-z]{3}$", to_upper=True)
 ]
@@ -58,6 +62,12 @@ _BudgetLimit = Annotated[_FiniteDecimal, Field(ge=0), _ExactMoney]
 _TransactionDate = Annotated[date, Field(strict=True), BeforeValidator(_calendar_date)]
 _Month = Annotated[int, Field(strict=True, ge=1, le=12)]
 _Year = Annotated[int, Field(strict=True, ge=date.min.year, le=date.max.year)]
+_STORED_MONEY = TypeAdapter(Annotated[Decimal, Field(max_digits=12, decimal_places=2)])
+
+
+def validate_stored_money(amount: Decimal | None) -> None:
+    if amount is not None:
+        _STORED_MONEY.validate_python(amount)
 
 
 class _Request(BaseModel):
@@ -66,20 +76,20 @@ class _Request(BaseModel):
 
 class ExpenseCreate(_Request):
     amount: _ExpenseAmount
-    category: _Text
-    description: _Text | None = None
+    category: _Category
+    description: _Description | None = None
     transaction_date: _TransactionDate
     currency: _Currency = "PKR"
-    payment_method: _Text | None = None
+    payment_method: _PaymentMethod | None = None
 
 
 class ExpenseUpdate(_Request):
     amount: _PatchValue[_ExpenseAmount]
-    category: _PatchValue[_Text]
-    description: _Text | None = None
+    category: _PatchValue[_Category]
+    description: _Description | None = None
     transaction_date: _PatchValue[_TransactionDate]
     currency: _PatchValue[_Currency]
-    payment_method: _Text | None = None
+    payment_method: _PaymentMethod | None = None
 
 
 class _PersistedResponse(BaseModel):
@@ -98,16 +108,21 @@ class ExpenseResponse(_PersistedResponse):
     currency: _Currency
     payment_method: _Text | None
 
+    @computed_field
+    @property
+    def expense_id(self) -> UUID:
+        return self.id
+
 
 class BudgetCreate(_Request):
-    category: _Text
+    category: _Category
     budget_limit: _BudgetLimit
     month: _Month
     year: _Year
 
 
 class BudgetUpdate(_Request):
-    category: _PatchValue[_Text]
+    category: _PatchValue[_Category]
     budget_limit: _PatchValue[_BudgetLimit]
     month: _PatchValue[_Month]
     year: _PatchValue[_Year]
@@ -120,6 +135,11 @@ class BudgetResponse(_PersistedResponse):
     year: _Year
     total_spent: _BudgetLimit | None = None
     remaining_budget: _Money | None = None
+
+    @computed_field
+    @property
+    def budget_id(self) -> UUID:
+        return self.id
 
 
 class BudgetSummary(BaseModel):

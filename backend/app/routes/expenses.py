@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import AfterValidator
 
 from ..schemas import (
     ExpenseCreate,
@@ -13,6 +14,7 @@ from ..schemas import (
     ExpenseUpdate,
     SMSParseRequest,
     SMSParseResponse,
+    validate_stored_money,
 )
 from ..services.ai_service import ExpenseAIService, ExpenseParsingError
 from ..services.expense_service import (
@@ -35,6 +37,11 @@ def get_expense_service() -> ExpenseService:
 
 
 ExpenseDependency = Annotated[ExpenseService, Depends(get_expense_service)]
+
+
+def _validate_storage(payload: ExpenseCreate | ExpenseUpdate) -> ExpenseCreate | ExpenseUpdate:
+    validate_stored_money(payload.amount)
+    return payload
 
 
 def get_expense_parser() -> ExpenseAIService:
@@ -66,7 +73,8 @@ async def parse_sms(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_expense(
-    expense_data: ExpenseCreate, service: ExpenseDependency
+    expense_data: Annotated[ExpenseCreate, AfterValidator(_validate_storage)],
+    service: ExpenseDependency,
 ) -> ExpenseResponse:
     return service.create_expense(expense_data)
 
@@ -85,9 +93,12 @@ def get_expense(expense_id: UUID, service: ExpenseDependency) -> ExpenseResponse
     return _require_expense(service.get_expense_by_id(expense_id))
 
 
+@router.put("/{expense_id}")
 @router.patch("/{expense_id}")
 def update_expense(
-    expense_id: UUID, expense_data: ExpenseUpdate, service: ExpenseDependency
+    expense_id: UUID,
+    expense_data: Annotated[ExpenseUpdate, AfterValidator(_validate_storage)],
+    service: ExpenseDependency,
 ) -> ExpenseResponse:
     return _require_expense(service.update_expense(expense_id, expense_data))
 

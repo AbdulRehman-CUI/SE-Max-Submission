@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from ..models import Budget, Expense
 
 BUDGET_CURRENCY = "PKR"  # Proposed currency policy for budgets without a currency column.
-_UNIQUE_CONSTRAINT = "uq_budgets_user_category_month_year"
+_UNIQUE_CONSTRAINTS = {"uq_budget_user_category_month_year", "uq_budgets_user_category_month_year"}
 _PERIOD_FIELDS = {"category", "month", "year"}
 
 
@@ -210,7 +210,7 @@ class BudgetService:
             original = error.orig
             code = getattr(original, "sqlstate", None) or getattr(original, "pgcode", None)
             constraint = getattr(getattr(original, "diag", None), "constraint_name", None)
-            if code == "23505" and constraint == _UNIQUE_CONSTRAINT:
+            if code == "23505" and constraint in _UNIQUE_CONSTRAINTS:
                 raise DuplicateBudgetError from error
             raise
         except Exception:

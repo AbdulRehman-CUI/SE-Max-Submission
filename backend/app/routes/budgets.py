@@ -4,8 +4,9 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import AfterValidator
 
-from ..schemas import BudgetCreate, BudgetResponse, BudgetSummary, BudgetUpdate
+from ..schemas import BudgetCreate, BudgetResponse, BudgetSummary, BudgetUpdate, validate_stored_money
 from ..services.budget_service import BudgetPeriodChangeError, BudgetService, DuplicateBudgetError
 from ..services.expense_service import DEFAULT_LIMIT, MAX_LIMIT, MAX_SKIP
 
@@ -22,8 +23,16 @@ def get_budget_service() -> BudgetService:
 BudgetDependency = Annotated[BudgetService, Depends(get_budget_service)]
 
 
+def _validate_storage(payload: BudgetCreate | BudgetUpdate) -> BudgetCreate | BudgetUpdate:
+    validate_stored_money(payload.budget_limit)
+    return payload
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_budget(budget_data: BudgetCreate, service: BudgetDependency) -> BudgetResponse:
+def create_budget(
+    budget_data: Annotated[BudgetCreate, AfterValidator(_validate_storage)],
+    service: BudgetDependency,
+) -> BudgetResponse:
     try:
         return service.create_budget(budget_data)
     except DuplicateBudgetError as error:
@@ -47,9 +56,12 @@ def get_budget(budget_id: UUID, service: BudgetDependency) -> BudgetResponse:
     return budget
 
 
+@router.put("/{budget_id}")
 @router.patch("/{budget_id}")
 def update_budget(
-    budget_id: UUID, budget_data: BudgetUpdate, service: BudgetDependency
+    budget_id: UUID,
+    budget_data: Annotated[BudgetUpdate, AfterValidator(_validate_storage)],
+    service: BudgetDependency,
 ) -> BudgetResponse:
     try:
         budget = service.update_budget(budget_id, budget_data)

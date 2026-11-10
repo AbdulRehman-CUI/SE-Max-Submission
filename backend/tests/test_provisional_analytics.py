@@ -69,7 +69,7 @@ class ProvisionalAnalyticsTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_openapi_schema_and_status_contract_with_all_finance_routers(self):
         paths = self.app.openapi()["paths"]
-        self.assertEqual(sum(map(len, paths.values())), 18)
+        self.assertEqual(sum(map(len, paths.values())), 20)
         for route in ("/api/expenses/parse", "/api/expenses/parse-sms"):
             self.assertEqual(set(paths[route]), {"post"})
         expected = {

@@ -120,9 +120,12 @@ class ExpenseExtractionProvider(Protocol):
 class GeminiExpenseProvider:
     """Structured generation over a shared, application-owned async Gemini client."""
 
-    def __init__(self, client: AsyncClient, model: str = DEFAULT_GEMINI_MODEL) -> None:
+    def __init__(
+        self, client: AsyncClient, model: str = DEFAULT_GEMINI_MODEL, *, timeout_seconds: int = 20
+    ) -> None:
         self._client = client
         self._model = model
+        self._timeout_seconds = timeout_seconds
 
     @classmethod
     @asynccontextmanager
@@ -131,11 +134,19 @@ class GeminiExpenseProvider:
         if not api_key:
             raise ExpenseParsingError(503, _UNAVAILABLE)
 
+        model = os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL
+        async with cls.connect(api_key, model) as provider:
+            yield provider
+
+    @classmethod
+    @asynccontextmanager
+    async def connect(
+        cls, api_key: str, model: str, *, timeout_seconds: int = 20
+    ) -> AsyncIterator[GeminiExpenseProvider]:
         from google import genai
 
-        model = os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL
         async with genai.Client(api_key=api_key).aio as client:
-            yield cls(client, model)
+            yield cls(client, model, timeout_seconds=timeout_seconds)
 
     async def extract(
         self, *, instruction: str, text: str, response_schema: dict[str, Any]
@@ -150,7 +161,7 @@ class GeminiExpenseProvider:
             max_output_tokens=4096,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             http_options=types.HttpOptions(
-                timeout=8_000,
+                timeout=min(8_000, self._timeout_seconds * 1_000),
                 retry_options=types.HttpRetryOptions(
                     attempts=3,
                     initial_delay=0.25,
@@ -161,7 +172,7 @@ class GeminiExpenseProvider:
             ),
         )
         try:
-            async with asyncio.timeout(20):
+            async with asyncio.timeout(self._timeout_seconds):
                 result = await self._client.models.generate_content(
                     model=self._model,
                     contents=json.dumps({"transaction_text": text}, ensure_ascii=False),
