@@ -1,0 +1,4 @@
+"""
+SpendSense Application Package
+"""
+
