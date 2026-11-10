@@ -13,12 +13,15 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+export function normalizeApiBase(value: string): string {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (trimmed === "/api") return trimmed;
+  return trimmed.replace(/\/api$/, "") || "/";
+}
+
 const configuredBase =
   import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api";
-const base =
-  configuredBase === "/api"
-    ? configuredBase
-    : configuredBase.replace(/\/+$/, "").replace(/\/api$/, "");
+export const apiBaseUrl = normalizeApiBase(configuredBase);
 
 function errorMessage(status: number, body: unknown): string {
   const detail =
@@ -66,7 +69,7 @@ export async function request<T>(
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 25000);
   try {
-    const response = await fetch(`${base}${path}`, {
+    const response = await fetch(`${apiBaseUrl}/${path.replace(/^\/+/, "")}`, {
       ...options,
       headers,
       signal: controller.signal,

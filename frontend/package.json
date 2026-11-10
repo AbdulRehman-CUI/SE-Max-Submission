@@ -10,7 +10,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:production-api": "node scripts/verify-production-api.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.71.0",

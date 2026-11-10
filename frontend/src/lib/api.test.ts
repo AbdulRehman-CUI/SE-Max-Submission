@@ -1,7 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { allPages, json, request, session } from "./api";
+import {
+  allPages,
+  json,
+  normalizeApiBase,
+  request,
+  session,
+} from "./api";
 
 describe("API client", () => {
+  it("normalizes production and local API bases without duplicate prefixes", () => {
+    expect(
+      normalizeApiBase("https://se-max-submission-backend.vercel.app/"),
+    ).toBe("https://se-max-submission-backend.vercel.app");
+    expect(
+      normalizeApiBase("https://se-max-submission-backend.vercel.app/api/"),
+    ).toBe("https://se-max-submission-backend.vercel.app");
+    expect(normalizeApiBase("/api/")).toBe("/api");
+  });
+
   it("sends JSON with bearer authentication and accepts an empty response", async () => {
     session.set("synthetic-token");
     const fetcher = vi
