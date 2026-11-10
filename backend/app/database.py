@@ -10,7 +10,10 @@ Rules enforced here:
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from sqlalchemy import create_engine, event, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from typing import Generator, Tuple
 
@@ -18,14 +21,33 @@ from app.config import settings
 
 
 # ── Engine ────────────────────────────────────────────────────────────────────
-engine = create_engine(
-    settings.DATABASE_URL,
-    # Keep a small pool; tune via environment if needed.
-    pool_pre_ping=True,       # Discard stale connections silently.
-    pool_size=5,
-    max_overflow=10,
-    echo=settings.DEBUG,      # Log SQL only when DEBUG=True.
-)
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+if is_sqlite:
+    sqlite_path = make_url(settings.DATABASE_URL).database
+    if sqlite_path and sqlite_path != ":memory:":
+        Path(sqlite_path).parent.mkdir(parents=True, exist_ok=True)
+
+engine_options = {
+    "echo": settings.DEBUG,
+}
+if is_sqlite:
+    engine_options["connect_args"] = {"check_same_thread": False}
+else:
+    engine_options.update({
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+    })
+
+engine = create_engine(settings.DATABASE_URL, **engine_options)
+
+
+if is_sqlite:
+    @event.listens_for(engine, "connect")
+    def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 # ── Session factory ───────────────────────────────────────────────────────────

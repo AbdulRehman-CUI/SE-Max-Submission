@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str  # required – no default
+    # SQLite keeps local development self-contained. Set DATABASE_URL to a
+    # PostgreSQL URL when deploying or running the PostgreSQL integration suite.
+    DATABASE_URL: str = "sqlite:///./.sandbox/spendsense.db"
 
     # ── JWT ───────────────────────────────────────────────────────────────────
     SECRET_KEY: str          # required – no default
